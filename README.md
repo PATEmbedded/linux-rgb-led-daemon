@@ -33,7 +33,7 @@ flowchart LR
 
 ## Build and install
 
-Requirements: Linux, CMake 3.16 or newer, a C++17 compiler, and `libgpiod` 2.0 or newer with its development files (`libgpiod-dev` on Debian and Ubuntu).
+Requirements: Linux, CMake 3.16 or newer, a C++17 compiler, and `libgpiod` 2.0 or newer with its development files (`libgpiod-dev`). Debian 13 (trixie) and Ubuntu 25.10 or newer ship libgpiod 2.x. Ubuntu 24.04 and older Debian releases ship libgpiod 1.6, which is not supported. Check the version with `pkg-config --modversion libgpiod`.
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr

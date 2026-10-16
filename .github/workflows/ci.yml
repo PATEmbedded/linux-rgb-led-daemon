@@ -31,14 +31,18 @@ jobs:
         run: ctest --test-dir build --output-on-failure
 
   daemon:
-    name: Daemon and client (libgpiod)
+    name: Daemon and client (libgpiod 2, Debian trixie)
     runs-on: ubuntu-24.04
+    # Ubuntu 24.04 ships libgpiod 1.6, which this project does not support.
+    # Debian trixie ships libgpiod 2.x.
+    container: debian:trixie
     steps:
       - uses: actions/checkout@v6
-      - name: Install libgpiod
+      - name: Install the toolchain and libgpiod 2
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libgpiod-dev pkg-config
+          apt-get update
+          apt-get install -y --no-install-recommends build-essential cmake pkg-config libgpiod-dev ca-certificates
+          pkg-config --modversion libgpiod
       - name: Configure and build
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRGB_LED_BUILD_TESTS=OFF
