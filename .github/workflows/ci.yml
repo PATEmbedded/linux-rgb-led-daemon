@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    name: Unit tests (${{ matrix.compiler }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [g++, clang++]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+          -DRGB_LED_BUILD_DAEMON=OFF
+          -DRGB_LED_SANITIZE=ON
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  daemon:
+    name: Daemon and client (libgpiod)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install libgpiod
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgpiod-dev pkg-config
+      - name: Configure and build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRGB_LED_BUILD_TESTS=OFF
+          cmake --build build --parallel
+      - name: Smoke test
+        run: |
+          ./build/rgb-led-daemon --version
+          ./build/rgb-led-daemon --help > /dev/null
+          ./build/rgbctl --help > /dev/null
+          # A missing argument is a usage error.
+          if ./build/rgb-led-daemon --red 1 --green 1 --blue 3 2>/dev/null; then
+            echo "accepted two channels on the same line"; exit 1
+          fi
+          # Without the GPIO chip the daemon must fail instead of starting.
+          if ./build/rgb-led-daemon --red 1 --green 2 --blue 3 --chip /nonexistent 2>/dev/null; then
+            echo "started without a GPIO chip"; exit 1
+          fi
+          # Without a daemon the client must report that it cannot connect.
+          if ./build/rgbctl --socket /tmp/rgb-led-missing.sock ping 2>/dev/null; then
+            echo "reached a daemon that is not running"; exit 1
+          fi
