@@ -1,0 +1,35 @@
+[Unit]
+Description=RGB status LED driver (software PWM on three GPIO lines)
+Documentation=https://github.com/PATEmbedded/linux-rgb-led-daemon
+After=local-fs.target
+
+[Service]
+Type=simple
+User=rgbled
+Group=rgbled
+# Group that owns the GPIO character devices on most Linux distributions.
+SupplementaryGroups=gpio
+# The line offsets depend on the board: set them to the lines the LED is wired to.
+# Find them with gpioinfo (from libgpiod). Override them with: systemctl edit rgb-led-daemon
+ExecStart=/usr/bin/rgb-led-daemon --chip /dev/gpiochip0 --red 4 --green 5 --blue 6 --socket /run/rgb-led/rgb-led.sock
+RuntimeDirectory=rgb-led
+RuntimeDirectoryMode=0750
+Restart=on-failure
+RestartSec=2
+
+# Hardening: the daemon needs no privileges and only its own runtime directory.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target
